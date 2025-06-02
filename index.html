@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fortnite Live Player Count</title>
+  <style>
+    body {
+      background: transparent;
+      color: white;
+      font-family: 'Arial', sans-serif;
+      font-size: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    #player-count {
+      text-shadow: 2px 2px 4px #000;
+    }
+  </style>
+</head>
+<body>
+  <div id="player-count">fortnite-playing</div>
+
+  <script>
+    async function fetchPlayerCount() {
+      const proxyUrl = "https://corsproxy.io/?https://api.fortnite.com/ecosystem/v1/islands/set_br_playlists/metrics/minute/peak-ccu";
+      const display = document.getElementById("player-count");
+
+      display.textContent = "Loading player count...";
+
+      try {
+        const response = await fetch(proxyUrl);
+        const data = await response.json();
+
+        const intervals = data.intervals;
+        const latestValid = [...intervals].reverse().find(entry => entry.value !== null);
+
+        if (!latestValid) throw new Error("No valid player data");
+
+        const playerCount = latestValid.value;
+        const formatted = `${(playerCount / 1000).toFixed(1)}K players online`;
+
+        display.textContent = formatted;
+      } catch (error) {
+        console.error("Error fetching player count:", error);
+        display.textContent = "Unable to load";
+      }
+    }
+
+    fetchPlayerCount();
+    setInterval(fetchPlayerCount, 5 * 60 * 1000); // update every 5 minutes
+  </script>
+</body>
+</html>
