@@ -1,19 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Fortnite Drop Location</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fortnite Drop Map</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      background: black;
       overflow: hidden;
+      height: 100%;
+      background: black;
     }
-    #map-container {
+    #container {
       position: relative;
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
     }
     #map {
       width: 100%;
@@ -23,83 +25,80 @@
     }
     #marker {
       position: absolute;
-      width: 2.5%;
-      aspect-ratio: 1 / 1;
+      width: 32px;
+      height: 32px;
       background: red;
-      border: 3px solid white;
       border-radius: 50%;
+      border: 2px solid white;
       transform: translate(-50%, -50%);
+      pointer-events: none;
       z-index: 10;
-      box-shadow: 0 0 8px white;
-      display: none;
     }
     #label {
       position: absolute;
       top: 10px;
       left: 10px;
       color: white;
-      font-family: sans-serif;
-      font-size: 2vw;
-      text-shadow: 1px 1px 4px black;
+      font-size: 1.2em;
+      background: rgba(0,0,0,0.5);
+      padding: 5px 10px;
+      border-radius: 6px;
+      z-index: 20;
     }
   </style>
 </head>
 <body>
-  <div id="map-container">
-    <img id="map" alt="Fortnite Map">
+  <div id="container">
+    <img id="map" src="" alt="Fortnite Map"/>
     <div id="marker"></div>
     <div id="label"></div>
   </div>
 
   <script>
-    let imageNaturalWidth, imageNaturalHeight;
+    const container = document.getElementById("container");
+    const marker = document.getElementById("marker");
+    const mapImg = document.getElementById("map");
+    const label = document.getElementById("label");
 
-    async function loadMap() {
-      const mapRes = await fetch('https://fortnite-api.com/v1/map');
-      const mapData = await mapRes.json();
-      const mapImageURL = mapData.data.images.blank;
-
-      const img = document.getElementById("map");
-      img.onload = () => {
-        imageNaturalWidth = img.naturalWidth;
-        imageNaturalHeight = img.naturalHeight;
-        updateLocation(); // Trigger initial marker placement after image loads
-      };
-      img.src = mapImageURL;
+    async function loadMapImage() {
+      try {
+        const res = await fetch("https://fortnite-api.com/v1/map");
+        const data = await res.json();
+        const imageUrl = data.data.images.pois;
+        mapImg.src = imageUrl;
+      } catch (err) {
+        console.error("Failed to load map image:", err);
+      }
     }
 
     async function updateLocation() {
       try {
-        const res = await fetch(`location.json?t=${Date.now()}`);
+        const res = await fetch("location.json?ts=" + Date.now()); // cache bust
         const location = await res.json();
 
-        if (!location.name || typeof location.x !== 'number' || typeof location.y !== 'number') {
-          console.warn("Invalid location data:", location);
-          return;
-        }
+        if (!location || location.x === undefined || location.y === undefined) return;
 
-        document.getElementById("label").textContent = location.name;
+        // Update label
+        label.textContent = location.name || "";
 
-        const marker = document.getElementById("marker");
-        const container = document.getElementById("map-container");
+        // Fortnite map uses a radius of 135000 units (i.e., -135000 to +135000)
+        const scaleX = container.offsetWidth / 270000;
+        const scaleY = container.offsetHeight / 270000;
 
-        // Fortnite API coordinates go from roughly -65000 to 65000
-        const scaleX = container.offsetWidth / 130000;
-        const scaleY = container.offsetHeight / 130000;
-
-        const xPos = (location.x + 65000) * scaleX;
-        const yPos = (65000 - location.y) * scaleY;
+        const xPos = (location.x + 135000) * scaleX;
+        const yPos = (135000 - location.y) * scaleY; // flip Y to match image
 
         marker.style.left = `${xPos}px`;
         marker.style.top = `${yPos}px`;
-        marker.style.display = 'block';
-      } catch (e) {
-        console.error("Failed to update location:", e);
+      } catch (err) {
+        console.error("Failed to update marker:", err);
       }
     }
 
-    loadMap();
-    setInterval(updateLocation, 5000); // Refresh marker every 5 seconds
+    loadMapImage().then(() => {
+      updateLocation();
+      setInterval(updateLocation, 5000);
+    });
   </script>
 </body>
 </html>
