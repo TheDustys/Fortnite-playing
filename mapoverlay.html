@@ -1,54 +1,94 @@
-async function getRandomLocation() {
-  try {
-    const username = await getVariable("displayname");
-    const response = await fetch("https://fortnite-api.com/v1/map");
-    const data = await response.json();
-    const locations = data.data.pois.map((poi) => poi.name);
-    const randomLocation = locations[Math.floor(Math.random() * locations.length)];
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fortnite Map Overlay</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      height: 100%;
+      width: 100%;
+      background: black;
+    }
+    #map-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    .marker {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 999;
+    }
+  </style>
+</head>
+<body>
+  <div id="map-container">
+    <img id="map" src="https://fortnite.gg/img/map/map.png" alt="Fortnite Map">
+    <img id="marker" class="marker" src="https://upload.wikimedia.org/wikipedia/commons/e/ec/RedDot.svg" alt="Marker" style="display:none">
+  </div>
 
-    const cleanName = randomLocation.replace(/\s*\(.*?\)/, "").trim();
+  <script>
+    const locationPositions = {
+      "Brutal Bastion": { x: 68.1, y: 16.3 },
+      "Slappy Shores": { x: 80.5, y: 51.9 },
+      "Mega City": { x: 70.4, y: 72.1 },
+      "Shattered Slabs": { x: 33.2, y: 63.8 },
+      "Frenzy Fields": { x: 57.3, y: 62.5 },
+      "Breakwater Bay": { x: 23.1, y: 32.5 },
+      "Lonely Labs": { x: 87.5, y: 20.6 }
+      // Add more known POIs here
+    };
 
-    console.log(`${username} says ${randomLocation} is your next drop! 🏆`);
+    const marker = document.getElementById("marker");
+    const map = document.getElementById("map");
+    const container = document.getElementById("map-container");
 
-    tts({
-      message: `${username} wants you to land at ${randomLocation}!`,
-      voice: "Brian",
-      volume: 60,
-    });
+    function updateMarker(location) {
+      const pos = locationPositions[location];
+      if (!pos) {
+        console.warn("Unknown location:", location);
+        marker.style.display = "none";
+        return;
+      }
+      const containerWidth = container.offsetWidth;
+      const containerHeight = container.offsetHeight;
+      const left = (pos.x / 100) * containerWidth;
+      const top = (pos.y / 100) * containerHeight;
 
-    chatbot({
-      message: `${username} wants you to land at ${randomLocation}!`,
-      site: ["twitch", "youtube"],
-      chatAsSelf: true,
-    });
+      marker.style.left = `${left}px`;
+      marker.style.top = `${top}px`;
+      marker.style.display = "block";
+    }
 
-    overlaySetTextContent({
-      layer: "location",
-      content: `${username} say drop at ${randomLocation}!`,
-    });
+    async function fetchLocation() {
+      try {
+        const res = await fetch("location.json?" + new Date().getTime());
+        const json = await res.json();
+        if (json.location) updateMarker(json.location);
+      } catch (err) {
+        console.error("Failed to fetch location.json:", err);
+      }
+    }
 
-    await setVariable({ name: "location", value: randomLocation });
-
-    overlaySetLayerVisibility({ layer: "location", on: true });
-    overlaySetLayerVisibility({ layer: "map1", on: true });
-    overlaySetLayerVisibility({ layer: "mapaddress", on: true });
-
-    overlaySendMessage({
-      type: "setLocation",
-      location: cleanName,
-    });
-
-    await delay(8000);
-
-    overlaySetLayerVisibility({ layer: "location", on: false });
-    overlaySetLayerVisibility({ layer: "map1", on: false });
-    overlaySetLayerVisibility({ layer: "mapaddress", on: false });
-
-    done();
-    return randomLocation;
-  } catch (error) {
-    console.error("Error fetching random location:", error);
-    done();
-    return null;
-  }
-}
+    setInterval(fetchLocation, 2000);
+    fetchLocation();
+  </script>
+</body>
+</html>
