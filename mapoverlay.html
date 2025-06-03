@@ -2,100 +2,94 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Fortnite Drop Spot Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fortnite Drop Map Overlay</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
       background: black;
+      width: 100%;
+      height: 100%;
       overflow: hidden;
+    }
+
+    #map-container {
+      position: relative;
       width: 100%;
       height: 100%;
     }
 
-    #wrapper {
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-      position: relative;
-    }
-
-    #map-container {
-      position: absolute;
-      top: 0;
-      left: 0;
-      transform-origin: top left;
-      transition: transform 0.8s ease-out;
-    }
-
     #map {
-      width: 4096px;
-      height: 4096px;
-      display: block;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transform-origin: center center;
+      transition: transform 0.8s ease;
     }
 
     #marker {
-      width: 32px;
-      height: 32px;
+      position: absolute;
+      width: 40px;
+      height: 40px;
       background: red;
       border-radius: 50%;
-      border: 4px solid white;
-      position: absolute;
-      top: 50%;
-      left: 50%;
       transform: translate(-50%, -50%);
-      z-index: 2;
-      box-shadow: 0 0 15px red;
+      z-index: 10;
+      pointer-events: none;
     }
   </style>
 </head>
 <body>
-  <div id="wrapper">
-    <div id="marker"></div>
-    <div id="map-container">
-      <img id="map" src="" alt="Fortnite Map" />
-    </div>
+  <div id="map-container">
+    <img id="map" src="https://fortnite-api.com/images/map.png" alt="Fortnite Map"/>
+    <div id="marker" style="display: none;"></div>
   </div>
 
   <script>
     let pois = [];
-    const zoom = 2.5;
 
-    async function init() {
-      const res = await fetch("https://fortnite-api.com/v1/map");
-      const data = await res.json();
-      pois = data.data.pois;
-      document.getElementById("map").src = data.data.images.pois;
+    // Load POI data on startup
+    fetch("https://fortnite-api.com/v1/map")
+      .then(res => res.json())
+      .then(data => {
+        pois = data.data.pois;
+      });
+
+    function zoomToLocation(locationName) {
+      const map = document.getElementById("map");
+      const marker = document.getElementById("marker");
+
+      const poi = pois.find(p => p.name === locationName);
+      if (!poi) return;
+
+      // Fortnite map is 2048x2048
+      const mapSize = 2048;
+      const containerSize = 1080;
+
+      const centerX = (poi.location.x / mapSize) * 100;
+      const centerY = (poi.location.y / mapSize) * 100;
+
+      // Position marker
+      marker.style.left = `${centerX}%`;
+      marker.style.top = `${centerY}%`;
+      marker.style.display = "block";
+
+      // Zoom effect using CSS transform
+      const offsetX = (containerSize / 2 - (poi.location.x / mapSize) * containerSize);
+      const offsetY = (containerSize / 2 - (poi.location.y / mapSize) * containerSize);
+
+      map.style.transform = `scale(2) translate(${offsetX}px, ${offsetY}px)`;
     }
 
-    function zoomToLocation(poiName) {
-      const poi = pois.find(p => p.name.toLowerCase() === poiName.toLowerCase());
-      if (!poi) {
-        console.warn(`POI "${poiName}" not found`);
-        return;
-      }
-
-      const x = poi.location.x;
-      const y = poi.location.y;
-
-      const viewWidth = window.innerWidth;
-      const viewHeight = window.innerHeight;
-
-      const translateX = -x * zoom + viewWidth / 2;
-      const translateY = -y * zoom + viewHeight / 2;
-
-      const container = document.getElementById("map-container");
-      container.style.transform = `scale(${zoom}) translate(${translateX / zoom}px, ${translateY / zoom}px)`;
-    }
-
+    // Listen for postMessage from LumiaStream
     window.addEventListener("message", (event) => {
       const { type, location } = event.data;
       if (type === "setLocation") {
         zoomToLocation(location);
       }
     });
-
-    init();
   </script>
 </body>
 </html>
