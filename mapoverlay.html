@@ -44,13 +44,13 @@
     const marker = document.getElementById("marker");
     const mapImg = document.getElementById("map");
 
-    async function fetchLocation() {
+    async function fetchPOI() {
       try {
-        const res = await fetch("location.json", { cache: "no-store" });
+        const res = await fetch("poi.json", { cache: "no-store" });
         if (!res.ok) return null;
         return res.json();
       } catch (err) {
-        console.error("Failed to fetch location:", err);
+        console.error("Failed to fetch POI:", err);
         return null;
       }
     }
@@ -67,9 +67,9 @@
     }
 
     async function refresh() {
-      const location = await fetchLocation();
-      if (location && typeof location.x === "number" && typeof location.y === "number") {
-        updateMarker(location);
+      const poi = await fetchPOI();
+      if (poi && typeof poi.x === "number" && typeof poi.y === "number") {
+        updateMarker(poi);
       } else {
         marker.style.display = "none";
       }
