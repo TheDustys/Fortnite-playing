@@ -2,20 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Fortnite Drop Map</title>
+  <title>Fortnite Drop Spot</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      overflow: hidden;
-      height: 100%;
       background: black;
+      overflow: hidden;
     }
-    #container {
+    #map-container {
       position: relative;
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
     }
     #map {
       width: 100%;
@@ -25,79 +23,66 @@
     }
     #marker {
       position: absolute;
-      width: 32px;
-      height: 32px;
-      background: red;
+      width: 20px;
+      height: 20px;
+      background-color: red;
       border-radius: 50%;
-      border: 2px solid white;
       transform: translate(-50%, -50%);
-      pointer-events: none;
-      z-index: 10;
+      z-index: 2;
     }
-    #label {
+    #marker-label {
       position: absolute;
-      top: 10px;
-      left: 10px;
       color: white;
-      font-size: 1.2em;
-      background: rgba(0,0,0,0.5);
-      padding: 5px 10px;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 2px 6px;
       border-radius: 6px;
-      z-index: 20;
+      font-size: 14px;
+      white-space: nowrap;
+      transform: translate(-50%, -150%);
+      pointer-events: none;
+      z-index: 3;
+      display: none;
     }
   </style>
 </head>
 <body>
-  <div id="container">
-    <img id="map" src="" alt="Fortnite Map"/>
+  <div id="map-container">
+    <img id="map" src="https://media.fortniteapi.io/images/map.png" alt="Fortnite Map" />
     <div id="marker"></div>
-    <div id="label"></div>
+    <div id="marker-label"></div>
   </div>
 
   <script>
-    const container = document.getElementById("container");
+    const SCALE = 2048; // Map is 2048x2048
     const marker = document.getElementById("marker");
-    const mapImg = document.getElementById("map");
-    const label = document.getElementById("label");
+    const label = document.getElementById("marker-label");
+    const map = document.getElementById("map");
 
-    async function loadMapImage() {
+    async function updateMarker() {
       try {
-        const res = await fetch("https://fortnite-api.com/v1/map");
-        const data = await res.json();
-        const imageUrl = data.data.images.pois;
-        mapImg.src = imageUrl;
-      } catch (err) {
-        console.error("Failed to load map image:", err);
+        const res = await fetch("poi.json?_=" + Date.now());
+        const poi = await res.json();
+        if (!poi || !poi.name || !poi.x || !poi.y) return;
+
+        const mapRect = map.getBoundingClientRect();
+        const posX = (poi.x / SCALE) * mapRect.width;
+        const posY = (poi.y / SCALE) * mapRect.height;
+
+        marker.style.left = `${posX}px`;
+        marker.style.top = `${posY}px`;
+
+        label.innerText = poi.name;
+        label.style.left = `${posX}px`;
+        label.style.top = `${posY}px`;
+        label.style.display = "block";
+      } catch (e) {
+        console.error("Error loading POI:", e);
       }
     }
 
-    async function updateLocation() {
-      try {
-        const res = await fetch("location.json?ts=" + Date.now()); // cache bust
-        const location = await res.json();
-
-        if (!location || location.x === undefined || location.y === undefined) return;
-
-        // Update label
-        label.textContent = location.name || "";
-
-        // Fortnite map uses a radius of 135000 units (i.e., -135000 to +135000)
-        const scaleX = container.offsetWidth / 270000;
-        const scaleY = container.offsetHeight / 270000;
-
-        const xPos = (location.x + 135000) * scaleX;
-        const yPos = (135000 - location.y) * scaleY; // flip Y to match image
-
-        marker.style.left = `${xPos}px`;
-        marker.style.top = `${yPos}px`;
-      } catch (err) {
-        console.error("Failed to update marker:", err);
-      }
-    }
-
-    loadMapImage().then(() => {
-      updateLocation();
-      setInterval(updateLocation, 5000);
+    window.addEventListener("load", () => {
+      updateMarker();
+      setInterval(updateMarker, 10000); // refresh every 10s
     });
   </script>
 </body>
