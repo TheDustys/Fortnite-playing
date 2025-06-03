@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fortnite POI Map Overlay</title>
+  <title>Fortnite Map Overlay</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
       overflow: hidden;
+      background: black;
     }
-    #map-container {
+    #container {
       position: relative;
       width: 100vw;
       height: 100vh;
@@ -27,49 +28,43 @@
       background-color: red;
       border-radius: 50%;
       transform: translate(-50%, -50%);
+      z-index: 10;
       pointer-events: none;
     }
   </style>
 </head>
 <body>
-  <div id="map-container">
+  <div id="container">
     <img id="map" src="https://media.fortniteapi.io/images/map.png" alt="Fortnite Map" />
     <div id="marker"></div>
   </div>
 
   <script>
-    async function fetchPOI() {
+    const mapImageSize = 2048;
+    const marker = document.getElementById("marker");
+    const container = document.getElementById("container");
+
+    async function updateMarker() {
       try {
-        const response = await fetch('poi.json', { cache: 'no-store' });
-        const poi = await response.json();
+        const res = await fetch("https://thedustys.github.io/Fortnite-playing/poi.json?" + Date.now());
+        const { x, y } = await res.json();
 
-        if (!poi || !poi.x || !poi.y) return;
+        const containerRect = container.getBoundingClientRect();
+        const scaleX = containerRect.width / mapImageSize;
+        const scaleY = containerRect.height / mapImageSize;
 
-        const mapImg = document.getElementById('map');
-        const marker = document.getElementById('marker');
+        const posX = x * scaleX;
+        const posY = y * scaleY;
 
-        // Wait for map to load
-        mapImg.onload = () => {
-          const mapRect = mapImg.getBoundingClientRect();
-          const xScale = mapRect.width / 2048;
-          const yScale = mapRect.height / 2048;
-
-          const markerX = poi.x * xScale;
-          const markerY = poi.y * yScale;
-
-          marker.style.left = `${markerX}px`;
-          marker.style.top = `${markerY}px`;
-        };
-
-        // Manually trigger load if already loaded
-        if (mapImg.complete) mapImg.onload();
+        marker.style.left = `${posX}px`;
+        marker.style.top = `${posY}px`;
       } catch (err) {
-        console.error('Failed to fetch POI:', err);
+        console.error("Failed to fetch poi.json or calculate marker:", err);
       }
     }
 
-    fetchPOI();
-    setInterval(fetchPOI, 5000); // Refresh every 5 seconds
+    updateMarker();
+    setInterval(updateMarker, 5000);
   </script>
 </body>
 </html>
