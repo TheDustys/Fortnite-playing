@@ -8,25 +8,21 @@
     html, body {
       margin: 0;
       padding: 0;
-      background: black;
-      width: 100vw;
-      height: 100vh;
+      background: transparent;
+      width: 100%;
+      height: 100%;
       overflow: hidden;
     }
 
     #mapContainer {
       position: relative;
-      width: 1080px;
-      height: 1080px;
-      transform-origin: center center;
+      display: inline-block;
     }
 
     #mapImage {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 4096px;
-      height: 4096px;
+      display: block;
+      width: 100%;
+      height: auto;
     }
 
     #marker {
@@ -38,30 +34,18 @@
       border-radius: 50%;
       transform: translate(-50%, -50%);
       z-index: 10;
-      box-shadow: 0 0 8px #fff;
-    }
-
-    #wrapper {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 4096px;
-      height: 4096px;
-      transform: translate(-50%, -50%);
-      overflow: hidden;
+      box-shadow: 0 0 8px white;
     }
   </style>
 </head>
 <body>
-  <div id="wrapper">
-    <div id="mapContainer">
-      <img id="mapImage" src="" alt="Fortnite Map">
-      <div id="marker"></div>
-    </div>
+  <div id="mapContainer">
+    <img id="mapImage" src="" alt="Fortnite Map" />
+    <div id="marker"></div>
   </div>
 
   <script>
-    async function loadMap() {
+    async function initMap() {
       try {
         const mapRes = await fetch("https://fortnite-api.com/v1/map");
         const mapData = await mapRes.json();
@@ -71,13 +55,11 @@
         const location = await locationRes.json();
 
         const mapImage = document.getElementById("mapImage");
-        const mapContainer = document.getElementById("mapContainer");
         const marker = document.getElementById("marker");
 
         mapImage.onload = () => {
-          // Fortnite map bounds: approx ±65000
-          const mapWidth = 2048;
-          const mapHeight = 2048;
+          const mapWidth = mapImage.naturalWidth;
+          const mapHeight = mapImage.naturalHeight;
 
           const percentX = (location.x + 65000) / 130000;
           const percentY = (65000 - location.y) / 130000;
@@ -87,22 +69,15 @@
 
           marker.style.left = `${pixelX}px`;
           marker.style.top = `${pixelY}px`;
-
-          // Pan and zoom to center the marker
-          const zoom = 2.2;
-          const offsetX = 1080 / 2 - pixelX * zoom;
-          const offsetY = 1080 / 2 - pixelY * zoom;
-
-          mapContainer.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${zoom})`;
         };
 
         mapImage.src = mapImageUrl;
-      } catch (error) {
-        console.error("Error loading map or marker:", error);
+      } catch (err) {
+        console.error("Map error:", err);
       }
     }
 
-    loadMap();
+    initMap();
   </script>
 </body>
 </html>
