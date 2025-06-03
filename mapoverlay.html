@@ -14,8 +14,8 @@
     }
 
     #wrapper {
-      width: 1080px;
-      height: 1080px;
+      width: 100vw;
+      height: 100vh;
       overflow: hidden;
       position: relative;
     }
@@ -75,14 +75,14 @@
         return;
       }
 
-      const mapSize = 4096;
-      const viewSize = 1080;
       const x = poi.location.x;
       const y = poi.location.y;
 
-      // Translate so that POI is centered in 1080x1080 frame
-      const translateX = -x * zoom + viewSize / 2;
-      const translateY = -y * zoom + viewSize / 2;
+      const viewWidth = window.innerWidth;
+      const viewHeight = window.innerHeight;
+
+      const translateX = -x * zoom + viewWidth / 2;
+      const translateY = -y * zoom + viewHeight / 2;
 
       const container = document.getElementById("map-container");
       container.style.transform = `scale(${zoom}) translate(${translateX / zoom}px, ${translateY / zoom}px)`;
