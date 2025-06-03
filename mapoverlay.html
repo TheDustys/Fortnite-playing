@@ -29,6 +29,8 @@
       pointer-events: none;
       transform: translate(-50%, -50%);
       display: none;
+      /* Uncomment this for debugging marker visibility */
+      /* border: 2px solid red; */
     }
   </style>
 </head>
@@ -39,48 +41,50 @@
   </div>
 
   <script>
-    async function loadLocationAndMap() {
+    window.onload = async () => {
       try {
         // Step 1: Get the chosen location from location.json
         const locationRes = await fetch("location.json", { cache: "no-store" });
         const { location } = await locationRes.json();
 
-        if (!location) return;
+        if (!location) {
+          console.warn("No location set in location.json.");
+          return;
+        }
 
         // Step 2: Get map data from Fortnite API
         const mapRes = await fetch("https://fortnite-api.com/v1/map");
         const mapData = await mapRes.json();
 
         const imageUrl = mapData.data.images.blank;
+        const pois = mapData.data.pois;
+
         document.getElementById("map-image").src = imageUrl;
 
-        const poi = mapData.data.pois.find(p => p.name.toLowerCase() === location.toLowerCase());
+        // Step 3: Match POI name robustly
+        const normalize = str => str.trim().toLowerCase().replace(/[^\w\s]/gi, '');
+        const poi = pois.find(p => normalize(p.name) === normalize(location));
 
         if (!poi) {
-          console.warn("POI not found:", location);
+          console.warn(`POI not found: "${location}"`);
           return;
         }
 
-        // Step 3: Convert Fortnite coordinates to screen position
-        const { x, y } = poi.location;
-        const marker = document.getElementById("marker");
-
-        // Wait until the image is loaded to get dimensions
+        // Step 4: Wait for image to load, then place marker
         const mapImage = document.getElementById("map-image");
         mapImage.onload = () => {
-          const imgWidth = mapImage.naturalWidth;
-          const imgHeight = mapImage.naturalHeight;
+          const { x, y } = poi.location;
+          const marker = document.getElementById("marker");
 
-          // Fortnite coords are roughly in a -5120 to +5120 space
+          const container = document.getElementById("map-container");
+          const containerWidth = container.clientWidth;
+          const containerHeight = container.clientHeight;
+
           const mapWidthUnits = 10240;
           const mapHeightUnits = 10240;
 
           const offsetX = (x + 5120) / mapWidthUnits;
           const offsetY = 1 - (y + 5120) / mapHeightUnits;
-
-          const container = document.getElementById("map-container");
-          const containerWidth = container.clientWidth;
-          const containerHeight = container.clientHeight;
 
           const pixelX = offsetX * containerWidth;
           const pixelY = offsetY * containerHeight;
@@ -93,9 +97,7 @@
       } catch (err) {
         console.error("Error loading map overlay:", err);
       }
-    }
-
-    loadLocationAndMap();
+    };
   </script>
 </body>
 </html>
