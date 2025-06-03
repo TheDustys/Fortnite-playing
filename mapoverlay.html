@@ -58,28 +58,33 @@
       document.getElementById("map").src = mapImageURL;
     }
 
-    async function loadLocation() {
-      const res = await fetch("location.json", { cache: "no-store" });
-      const location = await res.json();
+    async function updateLocation() {
+      try {
+        const res = await fetch("location.json", { cache: "no-store" });
+        const location = await res.json();
 
-      if (!location.name || typeof location.x !== 'number' || typeof location.y !== 'number') {
-        console.warn("Invalid location data:", location);
-        return;
+        if (!location.name || typeof location.x !== 'number' || typeof location.y !== 'number') {
+          console.warn("Invalid location data:", location);
+          return;
+        }
+
+        document.getElementById("label").textContent = location.name;
+
+        const percentX = (location.x + 65000) / 130000;
+        const percentY = (65000 - location.y) / 130000;
+
+        const marker = document.getElementById("marker");
+        marker.style.left = `${percentX * 100}%`;
+        marker.style.top = `${percentY * 100}%`;
+        marker.style.display = 'block';
+      } catch (e) {
+        console.error("Failed to update location:", e);
       }
-
-      document.getElementById("label").textContent = location.name;
-
-      // Place the marker
-      const percentX = (location.x + 65000) / 130000;
-      const percentY = (65000 - location.y) / 130000;
-
-      const marker = document.getElementById("marker");
-      marker.style.left = `${percentX * 100}%`;
-      marker.style.top = `${percentY * 100}%`;
-      marker.style.display = 'block';
     }
 
-    loadMap().then(loadLocation);
+    loadMap();
+    updateLocation();
+    setInterval(updateLocation, 5000); // refresh every 5 seconds
   </script>
 </body>
 </html>
