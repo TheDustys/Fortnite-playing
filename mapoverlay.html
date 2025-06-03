@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fortnite POI Map Overlay</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    #map-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    #marker {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      background-color: red;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="map-container">
+    <img id="map" src="https://media.fortniteapi.io/images/map.png" alt="Fortnite Map" />
+    <div id="marker"></div>
+  </div>
+
+  <script>
+    async function fetchPOI() {
+      try {
+        const response = await fetch('poi.json', { cache: 'no-store' });
+        const poi = await response.json();
+
+        if (!poi || !poi.x || !poi.y) return;
+
+        const mapImg = document.getElementById('map');
+        const marker = document.getElementById('marker');
+
+        // Wait for map to load
+        mapImg.onload = () => {
+          const mapRect = mapImg.getBoundingClientRect();
+          const xScale = mapRect.width / 2048;
+          const yScale = mapRect.height / 2048;
+
+          const markerX = poi.x * xScale;
+          const markerY = poi.y * yScale;
+
+          marker.style.left = `${markerX}px`;
+          marker.style.top = `${markerY}px`;
+        };
+
+        // Manually trigger load if already loaded
+        if (mapImg.complete) mapImg.onload();
+      } catch (err) {
+        console.error('Failed to fetch POI:', err);
+      }
+    }
+
+    fetchPOI();
+    setInterval(fetchPOI, 5000); // Refresh every 5 seconds
+  </script>
+</body>
+</html>
