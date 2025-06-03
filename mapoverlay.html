@@ -2,18 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Drop Location Map</title>
+  <title>Fortnite Drop Map</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
       background: black;
       overflow: hidden;
+      height: 100%;
+      width: 100%;
     }
     #map-container {
       position: relative;
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
     }
     #map {
       width: 100%;
@@ -25,9 +27,10 @@
       width: 24px;
       height: 24px;
       background-color: red;
-      border-radius: 50%;
       border: 2px solid white;
+      border-radius: 50%;
       transform: translate(-50%, -50%);
+      display: none;
       pointer-events: none;
     }
   </style>
@@ -35,45 +38,46 @@
 <body>
   <div id="map-container">
     <img id="map" src="" alt="Fortnite Map">
-    <div id="marker" style="display:none;"></div>
+    <div id="marker"></div>
   </div>
 
   <script>
-    const markerEl = document.getElementById("marker");
     const mapImg = document.getElementById("map");
+    const markerEl = document.getElementById("marker");
+    let poiMap = {};
 
-    const poiCoordinates = {
-      "Brutal Bastion": [3970, 3040],
-      "Frenzy Fields": [3000, 4000],
-      "Mega City": [4600, 4200],
-      "Shattered Slabs": [2100, 4200],
-      "Slappy Shores": [4300, 2500],
-      "Steamy Springs": [3600, 4400],
-      "The Citadel": [1700, 2200],
-      "Lonely Labs": [4900, 1700],
-      "Anvil Square": [2900, 3000],
-      "Breakwater Bay": [1000, 1900],
-      "Faulty Splits": [3900, 3600],
-      "Kenjutsu Crossing": [4900, 4900]
-    };
+    // Fetch the latest map image and POIs from the Fortnite API
+    async function fetchMapData() {
+      try {
+        const response = await fetch("https://fortnite-api.com/v1/map");
+        const data = await response.json();
 
-    async function loadMapImage() {
-      const res = await fetch("https://fortnite-api.com/v1/map");
-      const data = await res.json();
-      const imageUrl = data.data.images.pois;
-      mapImg.src = imageUrl;
+        // Set the map image
+        mapImg.src = data.data.images.pois;
+
+        // Build a map of POI names to their coordinates
+        data.data.pois.forEach(poi => {
+          poiMap[poi.name] = {
+            x: poi.location.x,
+            y: poi.location.y
+          };
+        });
+      } catch (error) {
+        console.error("Error fetching map data:", error);
+      }
     }
 
+    // Update the marker position based on location.json
     async function updateMarker() {
       try {
-        const res = await fetch("location.json", { cache: "no-store" });
-        const data = await res.json();
+        const response = await fetch("location.json", { cache: "no-store" });
+        const data = await response.json();
         const location = data.location;
 
-        if (location && poiCoordinates[location]) {
-          const [x, y] = poiCoordinates[location];
+        if (location && poiMap[location]) {
+          const { x, y } = poiMap[location];
 
-          // Fortnite map is 5120 x 5120 coordinates, so scale to image size
+          // Fortnite map dimensions are 5120x5120 units
           const mapWidth = mapImg.clientWidth;
           const mapHeight = mapImg.clientHeight;
 
@@ -86,13 +90,19 @@
         } else {
           markerEl.style.display = "none";
         }
-      } catch (e) {
-        console.error("Failed to update marker:", e);
+      } catch (error) {
+        console.error("Error updating marker:", error);
       }
     }
 
-    loadMapImage();
-    setInterval(updateMarker, 2000);
+    // Initialize the map and start polling for location updates
+    async function init() {
+      await fetchMapData();
+      updateMarker();
+      setInterval(updateMarker, 2000);
+    }
+
+    init();
   </script>
 </body>
 </html>
