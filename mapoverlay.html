@@ -1,34 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Fortnite Drop Map</title>
+  <meta charset="UTF-8">
+  <title>Fortnite Drop Location</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      background: transparent;
-      width: 100%;
-      height: 100%;
+      background: black;
       overflow: hidden;
     }
-
-    #mapContainer {
+    #map-container {
       position: relative;
-      display: inline-block;
+      width: 100vw;
+      height: 100vh;
     }
-
-    #mapImage {
-      display: block;
+    #map {
       width: 100%;
-      height: auto;
+      height: 100%;
+      object-fit: contain;
+      display: block;
     }
-
     #marker {
       position: absolute;
-      width: 30px;
-      height: 30px;
+      width: 2.5%;
+      aspect-ratio: 1 / 1;
       background: red;
       border: 3px solid white;
       border-radius: 50%;
@@ -36,48 +32,54 @@
       z-index: 10;
       box-shadow: 0 0 8px white;
     }
+    #label {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      font-family: sans-serif;
+      font-size: 2vw;
+      text-shadow: 1px 1px 4px black;
+    }
   </style>
 </head>
 <body>
-  <div id="mapContainer">
-    <img id="mapImage" src="" alt="Fortnite Map" />
-    <div id="marker"></div>
+  <div id="map-container">
+    <img id="map" src="" alt="Fortnite Map">
+    <div id="marker" style="display:none;"></div>
+    <div id="label"></div>
   </div>
 
   <script>
-    async function initMap() {
-      try {
-        const mapRes = await fetch("https://fortnite-api.com/v1/map");
-        const mapData = await mapRes.json();
-        const mapImageUrl = mapData.data.images.blank;
-
-        const locationRes = await fetch("https://thedustys.github.io/Fortnite-playing/location.json");
-        const location = await locationRes.json();
-
-        const mapImage = document.getElementById("mapImage");
-        const marker = document.getElementById("marker");
-
-        mapImage.onload = () => {
-          const mapWidth = mapImage.naturalWidth;
-          const mapHeight = mapImage.naturalHeight;
-
-          const percentX = (location.x + 65000) / 130000;
-          const percentY = (65000 - location.y) / 130000;
-
-          const pixelX = percentX * mapWidth;
-          const pixelY = percentY * mapHeight;
-
-          marker.style.left = `${pixelX}px`;
-          marker.style.top = `${pixelY}px`;
-        };
-
-        mapImage.src = mapImageUrl;
-      } catch (err) {
-        console.error("Map error:", err);
-      }
+    async function loadMap() {
+      const mapRes = await fetch('https://fortnite-api.com/v1/map');
+      const mapData = await mapRes.json();
+      const mapImageURL = mapData.data.images.blank;
+      document.getElementById("map").src = mapImageURL;
     }
 
-    initMap();
+    async function loadLocation() {
+      const res = await fetch("location.json", { cache: "no-store" });
+      const location = await res.json();
+
+      if (!location.name || typeof location.x !== 'number' || typeof location.y !== 'number') {
+        console.warn("Invalid location data:", location);
+        return;
+      }
+
+      document.getElementById("label").textContent = location.name;
+
+      // Place the marker
+      const percentX = (location.x + 65000) / 130000;
+      const percentY = (65000 - location.y) / 130000;
+
+      const marker = document.getElementById("marker");
+      marker.style.left = `${percentX * 100}%`;
+      marker.style.top = `${percentY * 100}%`;
+      marker.style.display = 'block';
+    }
+
+    loadMap().then(loadLocation);
   </script>
 </body>
 </html>
