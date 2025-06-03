@@ -1,0 +1,27 @@
+name: Update POI JSON
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"  # Every 15 minutes
+  workflow_dispatch:
+
+jobs:
+  update-poi:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Fetch POI data
+        run: |
+          curl -H "Authorization: ${{ secrets.FORTNITE_API_KEY }}" \
+               https://fortniteapi.io/v2/game/poi?lang=en \
+               -o poi.json
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add poi.json
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update POI JSON"
+          git push
