@@ -33,27 +33,24 @@
   <div id="marker"></div>
 
   <script>
-    const map = document.getElementById('map');
     const marker = document.getElementById('marker');
+    const mapSize = 2048;
 
     async function updateMarker() {
       try {
-        const response = await fetch('location.json', { cache: "no-store" });
+        const response = await fetch('poi.json', { cache: 'no-store' });
         const data = await response.json();
-        const mapSize = 2048;
-
         const x = data.x;
         const y = data.y;
 
-        // Transform to top-right origin
-        const flippedX = mapSize - x;
-        const posX = flippedX / mapSize * window.innerWidth;
-        const posY = y / mapSize * window.innerHeight;
+        // Convert (0,0) bottom-left to screen coords
+        const screenX = x / mapSize * window.innerWidth;
+        const screenY = (1 - (y / mapSize)) * window.innerHeight;
 
-        marker.style.left = `${posX}px`;
-        marker.style.top = `${posY}px`;
+        marker.style.left = `${screenX}px`;
+        marker.style.top = `${screenY}px`;
       } catch (err) {
-        console.error("Failed to update marker:", err);
+        console.error('Failed to update marker:', err);
       }
     }
 
