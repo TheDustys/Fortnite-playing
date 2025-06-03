@@ -31,6 +31,7 @@
       transform: translate(-50%, -50%);
       z-index: 10;
       box-shadow: 0 0 8px white;
+      display: none;
     }
     #label {
       position: absolute;
@@ -45,22 +46,31 @@
 </head>
 <body>
   <div id="map-container">
-    <img id="map" src="" alt="Fortnite Map">
-    <div id="marker" style="display:none;"></div>
+    <img id="map" alt="Fortnite Map">
+    <div id="marker"></div>
     <div id="label"></div>
   </div>
 
   <script>
+    let imageNaturalWidth, imageNaturalHeight;
+
     async function loadMap() {
       const mapRes = await fetch('https://fortnite-api.com/v1/map');
       const mapData = await mapRes.json();
       const mapImageURL = mapData.data.images.blank;
-      document.getElementById("map").src = mapImageURL;
+
+      const img = document.getElementById("map");
+      img.onload = () => {
+        imageNaturalWidth = img.naturalWidth;
+        imageNaturalHeight = img.naturalHeight;
+        updateLocation(); // Trigger initial marker placement after image loads
+      };
+      img.src = mapImageURL;
     }
 
     async function updateLocation() {
       try {
-        const res = await fetch("location.json", { cache: "no-store" });
+        const res = await fetch(`location.json?t=${Date.now()}`);
         const location = await res.json();
 
         if (!location.name || typeof location.x !== 'number' || typeof location.y !== 'number') {
@@ -70,12 +80,18 @@
 
         document.getElementById("label").textContent = location.name;
 
-        const percentX = (location.x + 65000) / 130000;
-        const percentY = (65000 - location.y) / 130000;
-
         const marker = document.getElementById("marker");
-        marker.style.left = `${percentX * 100}%`;
-        marker.style.top = `${percentY * 100}%`;
+        const container = document.getElementById("map-container");
+
+        // Fortnite API coordinates go from roughly -65000 to 65000
+        const scaleX = container.offsetWidth / 130000;
+        const scaleY = container.offsetHeight / 130000;
+
+        const xPos = (location.x + 65000) * scaleX;
+        const yPos = (65000 - location.y) * scaleY;
+
+        marker.style.left = `${xPos}px`;
+        marker.style.top = `${yPos}px`;
         marker.style.display = 'block';
       } catch (e) {
         console.error("Failed to update location:", e);
@@ -83,8 +99,7 @@
     }
 
     loadMap();
-    updateLocation();
-    setInterval(updateLocation, 5000); // refresh every 5 seconds
+    setInterval(updateLocation, 5000); // Refresh marker every 5 seconds
   </script>
 </body>
 </html>
