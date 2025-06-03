@@ -9,93 +9,96 @@
       margin: 0;
       padding: 0;
       background: black;
+      width: 100vw;
+      height: 100vh;
       overflow: hidden;
-      width: 100%;
-      height: 100%;
     }
 
     #mapContainer {
       position: relative;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
+      width: 2048px;
+      height: 2048px;
+      transform-origin: center center;
     }
 
     #mapImage {
       position: absolute;
       top: 0;
       left: 0;
-      transform-origin: center center;
-      transition: transform 0.8s ease;
+      width: 2048px;
+      height: 2048px;
     }
 
     #marker {
       position: absolute;
-      width: 32px;
-      height: 32px;
+      width: 30px;
+      height: 30px;
       background: red;
       border: 3px solid white;
       border-radius: 50%;
-      pointer-events: none;
       transform: translate(-50%, -50%);
-      box-shadow: 0 0 10px #fff;
       z-index: 10;
+      box-shadow: 0 0 8px #fff;
+    }
+
+    #wrapper {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 1080px;
+      height: 1080px;
+      transform: translate(-50%, -50%);
+      overflow: hidden;
     }
   </style>
 </head>
 <body>
-  <div id="mapContainer">
-    <img id="mapImage" src="" alt="Fortnite Map">
-    <div id="marker"></div>
+  <div id="wrapper">
+    <div id="mapContainer">
+      <img id="mapImage" src="" alt="Fortnite Map">
+      <div id="marker"></div>
+    </div>
   </div>
 
   <script>
-    const MAP_CONTAINER_SIZE = 2048; // Fortnite map API image size
-    const OVERLAY_SIZE = 1080; // For TikTok overlay
-
     async function loadMap() {
       try {
-        // Get map image URL from API
         const mapRes = await fetch("https://fortnite-api.com/v1/map");
         const mapData = await mapRes.json();
         const mapImageUrl = mapData.data.images.blank;
 
-        // Load location.json from your GitHub
         const locationRes = await fetch("https://thedustys.github.io/Fortnite-playing/location.json");
-        const locationData = await locationRes.json();
+        const location = await locationRes.json();
 
         const mapImage = document.getElementById("mapImage");
+        const mapContainer = document.getElementById("mapContainer");
         const marker = document.getElementById("marker");
 
         mapImage.onload = () => {
-          // Center and zoom to marker position
-          const mapWidth = mapImage.naturalWidth;
-          const mapHeight = mapImage.naturalHeight;
+          // Fortnite map bounds: approx ±65000
+          const mapWidth = 2048;
+          const mapHeight = 2048;
 
-          const x = locationData.x;
-          const y = locationData.y;
+          const percentX = (location.x + 65000) / 130000;
+          const percentY = (65000 - location.y) / 130000;
 
-          const percentX = (x + 65000) / 130000; // Convert to 0–1 (map bounds)
-          const percentY = (65000 - y) / 130000;
+          const pixelX = percentX * mapWidth;
+          const pixelY = percentY * mapHeight;
 
-          const markerX = percentX * mapWidth;
-          const markerY = percentY * mapHeight;
+          marker.style.left = `${pixelX}px`;
+          marker.style.top = `${pixelY}px`;
 
-          marker.style.left = `${markerX}px`;
-          marker.style.top = `${markerY}px`;
+          // Pan and zoom to center the marker
+          const zoom = 2.2;
+          const offsetX = 1080 / 2 - pixelX * zoom;
+          const offsetY = 1080 / 2 - pixelY * zoom;
 
-          // Zoom + center marker to fit inside overlay
-          const zoom = OVERLAY_SIZE / 512;
-          const translateX = OVERLAY_SIZE / 2 - markerX * zoom;
-          const translateY = OVERLAY_SIZE / 2 - markerY * zoom;
-
-          mapImage.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoom})`;
+          mapContainer.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${zoom})`;
         };
 
         mapImage.src = mapImageUrl;
-
-      } catch (err) {
-        console.error("Failed to load map or location:", err);
+      } catch (error) {
+        console.error("Error loading map or marker:", error);
       }
     }
 
