@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Fortnite Drop Map Overlay</title>
   <style>
     html, body {
@@ -34,56 +34,66 @@
       width: 40px;
       height: 40px;
       background: red;
+      border: 2px solid white;
       border-radius: 50%;
       transform: translate(-50%, -50%);
-      z-index: 10;
+      z-index: 20;
       pointer-events: none;
+      display: none; /* hidden until location is set */
     }
   </style>
 </head>
 <body>
   <div id="map-container">
-    <img id="map" src="https://fortnite-api.com/images/map.png" alt="Fortnite Map"/>
-    <div id="marker" style="display: none;"></div>
+    <img id="map" src="https://fortnite-api.com/images/map.png" alt="Fortnite Map" />
+    <div id="marker"></div>
   </div>
 
   <script>
     let pois = [];
 
-    // Load POI data on startup
+    // Load POIs data on page load
     fetch("https://fortnite-api.com/v1/map")
       .then(res => res.json())
       .then(data => {
         pois = data.data.pois;
-      });
+        console.log("POIs loaded:", pois.length);
+      })
+      .catch(err => console.error("Error loading POIs:", err));
 
     function zoomToLocation(locationName) {
       const map = document.getElementById("map");
       const marker = document.getElementById("marker");
 
       const poi = pois.find(p => p.name === locationName);
-      if (!poi) return;
+      if (!poi) {
+        console.warn("Location not found:", locationName);
+        return;
+      }
 
-      // Fortnite map is 2048x2048
+      // Fortnite map dimensions in pixels (fixed)
       const mapSize = 2048;
-      const containerSize = 1080;
+      const containerSize = 1080; // Your overlay size
 
-      const centerX = (poi.location.x / mapSize) * 100;
-      const centerY = (poi.location.y / mapSize) * 100;
+      // Calculate percentage position of POI
+      const centerXPercent = (poi.location.x / mapSize) * 100;
+      const centerYPercent = (poi.location.y / mapSize) * 100;
 
-      // Position marker
-      marker.style.left = `${centerX}%`;
-      marker.style.top = `${centerY}%`;
+      console.log('Marker position:', centerXPercent, centerYPercent, 'Location:', locationName);
+
+      // Show and position marker
       marker.style.display = "block";
+      marker.style.left = `${centerXPercent}%`;
+      marker.style.top = `${centerYPercent}%`;
 
-      // Zoom effect using CSS transform
-      const offsetX = (containerSize / 2 - (poi.location.x / mapSize) * containerSize);
-      const offsetY = (containerSize / 2 - (poi.location.y / mapSize) * containerSize);
+      // Zoom map and translate to center on POI
+      const offsetX = (containerSize / 2) - (poi.location.x / mapSize) * containerSize;
+      const offsetY = (containerSize / 2) - (poi.location.y / mapSize) * containerSize;
 
       map.style.transform = `scale(2) translate(${offsetX}px, ${offsetY}px)`;
     }
 
-    // Listen for postMessage from LumiaStream
+    // Listen for LumiaStream postMessages
     window.addEventListener("message", (event) => {
       const { type, location } = event.data;
       if (type === "setLocation") {
