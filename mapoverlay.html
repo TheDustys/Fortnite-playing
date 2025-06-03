@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Fortnite Drop Location</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fortnite Drop Spot Overlay</title>
   <style>
     html, body {
       margin: 0;
@@ -17,83 +17,89 @@
       width: 100%;
       height: 100%;
     }
-    #fortnite-map {
+    #map {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transition: transform 1s ease;
     }
-    .marker {
+    #marker {
       position: absolute;
-      width: 32px;
-      height: 32px;
+      width: 40px;
+      height: 40px;
       background-color: red;
+      border: 3px solid yellow;
       border-radius: 50%;
-      border: 2px solid white;
-      transform: translate(-50%, -50%);
-      pointer-events: none;
-      z-index: 10;
+      transform: translate(-50%, -50%) scale(1);
+      z-index: 9999;
+      display: none;
+      transition: all 0.3s ease-in-out;
+    }
+    #location-text {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 10px 20px;
+      font-size: 1.5em;
+      border-radius: 10px;
+      font-family: sans-serif;
+      z-index: 9999;
     }
   </style>
 </head>
 <body>
   <div id="map-container">
-    <img id="fortnite-map" src="https://fortnite-api.com/images/map.png" alt="Fortnite Map" />
-    <div id="marker" class="marker" style="display: none;"></div>
+    <img id="map" src="https://fortnite.gg/img/map.jpg" alt="Fortnite Map" />
+    <div id="marker"></div>
+    <div id="location-text">Waiting for drop location...</div>
   </div>
 
   <script>
     const locationPositions = {
       "Retail Row": { x: 73.7, y: 78.9 },
-      "Lazy Lake": { x: 63.1, y: 84.4 },
-      "Slurpy Swamp": { x: 27.6, y: 85.1 },
-      "Holly Hedges": { x: 19.5, y: 71.5 },
-      "Sweaty Sands": { x: 28.1, y: 48.9 },
-      "Pleasant Park": { x: 44.7, y: 34.2 },
-      "Steamy Stacks": { x: 86.2, y: 22.9 },
-      "Craggy Cliffs": { x: 63.4, y: 15.3 },
-      "Dirty Docks": { x: 90.1, y: 44.1 },
-      "Weeping Woods": { x: 45.7, y: 67.8 }
-      // Add more named POIs here with map % coordinates
+      "Pleasant Park": { x: 41.2, y: 36.5 },
+      "Frenzy Fields": { x: 60.5, y: 62.4 },
+      "Brutal Bastion": { x: 83.1, y: 20.3 },
+      "Mega City": { x: 72.5, y: 54.2 },
+      "Shady Stilts": { x: 50.3, y: 71.2 },
+      "Rebel's Roost": { x: 20.5, y: 32.1 },
+      // Add more as needed (ensure names match cleaned names from LumiaStream)
     };
 
-    function zoomToLocation(locationName) {
-      const pos = locationPositions[locationName];
-      const map = document.getElementById("fortnite-map");
-      const marker = document.getElementById("marker");
+    const marker = document.getElementById("marker");
+    const map = document.getElementById("map");
+    const text = document.getElementById("location-text");
 
+    function zoomToLocation(name) {
+      text.textContent = `Drop at ${name}`;
+
+      const pos = locationPositions[name];
       if (!pos) {
-        console.warn("Unknown location:", locationName);
+        console.warn("Unknown location:", name);
+        marker.style.display = "none";
         return;
       }
 
-      // Center map based on location percentage
-      const x = pos.x;
-      const y = pos.y;
+      marker.style.display = "block";
 
-      // Apply zoom via transform origin
-      map.style.transformOrigin = `${x}% ${y}%`;
-      map.style.transform = "scale(2)";
-
-      // Show marker
-      const container = document.getElementById("map-container");
-      const markerX = (x / 100) * container.clientWidth;
-      const markerY = (y / 100) * container.clientHeight;
+      const mapContainer = document.getElementById("map-container");
+      const markerX = pos.x / 100 * mapContainer.offsetWidth;
+      const markerY = pos.y / 100 * mapContainer.offsetHeight;
 
       marker.style.left = `${markerX}px`;
       marker.style.top = `${markerY}px`;
-      marker.style.display = "block";
     }
 
-    // Listen for messages from LumiaStream
     window.addEventListener("message", (event) => {
-      console.log("📬 Message received:", event.data);
-      const { type, location } = event.data;
-
-      if (type === "setLocation") {
-        zoomToLocation(location);
+      if (event.data.type === "setLocation") {
+        zoomToLocation(event.data.location);
       }
     });
+
+    // Optional debug marker: comment out for production
+    // setTimeout(() => zoomToLocation("Retail Row"), 2000);
   </script>
 </body>
 </html>
