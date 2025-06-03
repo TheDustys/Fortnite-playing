@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Fortnite Drop Location Map</title>
+  <title>Fortnite Drop Spot Map</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      width: 1080px;
-      height: 1080px;
+      background: black;
       overflow: hidden;
-      background-color: black;
+      width: 100%;
+      height: 100%;
     }
 
     #wrapper {
@@ -25,13 +25,13 @@
       top: 0;
       left: 0;
       transform-origin: top left;
-      transition: transform 1s ease-in-out;
+      transition: transform 0.8s ease-out;
     }
 
     #map {
-      display: block;
       width: 4096px;
       height: 4096px;
+      display: block;
     }
 
     #marker {
@@ -41,61 +41,61 @@
       border-radius: 50%;
       border: 4px solid white;
       position: absolute;
-      z-index: 99;
-      pointer-events: none;
+      top: 50%;
+      left: 50%;
       transform: translate(-50%, -50%);
+      z-index: 2;
       box-shadow: 0 0 15px red;
     }
   </style>
 </head>
 <body>
   <div id="wrapper">
-    <div id="marker" style="left: 50%; top: 50%;"></div>
+    <div id="marker"></div>
     <div id="map-container">
-      <img id="map" src="" />
+      <img id="map" src="" alt="Fortnite Map" />
     </div>
   </div>
 
   <script>
-    let poiData = [];
-    const zoom = 2.5; // adjust zoom as needed to fit TikTok overlay
+    let pois = [];
+    const zoom = 2.5;
 
-    async function loadMapData() {
+    async function init() {
       const res = await fetch("https://fortnite-api.com/v1/map");
-      const json = await res.json();
-      poiData = json.data.pois;
-      document.getElementById("map").src = json.data.images.pois;
+      const data = await res.json();
+      pois = data.data.pois;
+      document.getElementById("map").src = data.data.images.pois;
     }
 
-    function zoomToPOI(poiName) {
-      const poi = poiData.find(p => p.name.toLowerCase() === poiName.toLowerCase());
+    function zoomToLocation(poiName) {
+      const poi = pois.find(p => p.name.toLowerCase() === poiName.toLowerCase());
       if (!poi) {
-        console.warn("POI not found:", poiName);
+        console.warn(`POI "${poiName}" not found`);
         return;
       }
 
+      const mapSize = 4096;
+      const viewSize = 1080;
       const x = poi.location.x;
       const y = poi.location.y;
 
-      // Center POI in the 1080x1080 viewport
-      const centerX = 1080 / 2;
-      const centerY = 1080 / 2;
-
-      const offsetX = -x * zoom + centerX;
-      const offsetY = -y * zoom + centerY;
+      // Translate so that POI is centered in 1080x1080 frame
+      const translateX = -x * zoom + viewSize / 2;
+      const translateY = -y * zoom + viewSize / 2;
 
       const container = document.getElementById("map-container");
-      container.style.transform = `scale(${zoom}) translate(${offsetX / zoom}px, ${offsetY / zoom}px)`;
+      container.style.transform = `scale(${zoom}) translate(${translateX / zoom}px, ${translateY / zoom}px)`;
     }
 
     window.addEventListener("message", (event) => {
       const { type, location } = event.data;
       if (type === "setLocation") {
-        zoomToPOI(location);
+        zoomToLocation(location);
       }
     });
 
-    loadMapData();
+    init();
   </script>
 </body>
 </html>
