@@ -21,36 +21,36 @@
     }
 
     #map-container {
-      width: 4096px;
-      height: 4096px;
       position: absolute;
+      top: 0;
+      left: 0;
+      transform-origin: top left;
       transition: transform 1s ease-in-out;
     }
 
     #map {
-      width: 100%;
-      height: 100%;
       display: block;
+      width: 4096px;
+      height: 4096px;
     }
 
     #marker {
-      width: 40px;
-      height: 40px;
+      width: 32px;
+      height: 32px;
       background: red;
       border-radius: 50%;
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
       border: 4px solid white;
-      box-shadow: 0 0 20px red;
+      position: absolute;
       z-index: 99;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 15px red;
     }
   </style>
 </head>
 <body>
   <div id="wrapper">
-    <div id="marker"></div>
+    <div id="marker" style="left: 50%; top: 50%;"></div>
     <div id="map-container">
       <img id="map" src="" />
     </div>
@@ -58,27 +58,34 @@
 
   <script>
     let poiData = [];
+    const zoom = 2.5; // adjust zoom as needed to fit TikTok overlay
 
     async function loadMapData() {
       const res = await fetch("https://fortnite-api.com/v1/map");
       const json = await res.json();
       poiData = json.data.pois;
-      document.getElementById('map').src = json.data.images.pois;
+      document.getElementById("map").src = json.data.images.pois;
     }
 
     function zoomToPOI(poiName) {
       const poi = poiData.find(p => p.name.toLowerCase() === poiName.toLowerCase());
-      if (!poi) return console.warn("POI not found:", poiName);
+      if (!poi) {
+        console.warn("POI not found:", poiName);
+        return;
+      }
 
-      const zoom = 3;
-      const screenCenterX = 1080 / 2;
-      const screenCenterY = 1080 / 2;
+      const x = poi.location.x;
+      const y = poi.location.y;
 
-      const translateX = -poi.location.x * zoom + screenCenterX;
-      const translateY = -poi.location.y * zoom + screenCenterY;
+      // Center POI in the 1080x1080 viewport
+      const centerX = 1080 / 2;
+      const centerY = 1080 / 2;
 
-      const mapContainer = document.getElementById("map-container");
-      mapContainer.style.transform = `scale(${zoom}) translate(${translateX / zoom}px, ${translateY / zoom}px)`;
+      const offsetX = -x * zoom + centerX;
+      const offsetY = -y * zoom + centerY;
+
+      const container = document.getElementById("map-container");
+      container.style.transform = `scale(${zoom}) translate(${offsetX / zoom}px, ${offsetY / zoom}px)`;
     }
 
     window.addEventListener("message", (event) => {
