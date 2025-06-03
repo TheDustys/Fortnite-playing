@@ -1,191 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Fortnite Map Overlay with Grid</title>
-<style>
-  body, html {
-    margin: 0; padding: 0; overflow: hidden;
-    background: #000;
-  }
-  #mapContainer {
-    position: relative;
-    width: 100vw; 
-    height: 100vh; 
-    max-width: 100vw;
-    max-height: 100vh;
-  }
-  #mapImage {
-    width: 100%;
-    height: 100%;
-    display: block;
-  }
-  #gridCanvas {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
-  }
-  #marker {
-    position: absolute;
-    width: 30px; height: 30px;
-    background: rgba(255,0,0,0.8);
-    border-radius: 50%;
-    border: 2px solid white;
-    box-shadow: 0 0 10px red;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-  }
-  .label {
-    position: absolute;
-    color: lime;
-    font-size: 12px;
-    font-family: monospace;
-    user-select: none;
-    pointer-events: none;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <title>Fortnite Drop Map</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    #map {
+      width: 100vw;
+      height: 100vh;
+      object-fit: contain;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    #marker {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      background-color: red;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+  </style>
 </head>
 <body>
-
-<div id="mapContainer">
-  <img id="mapImage" src="https://media.fortniteapi.io/images/map.png" alt="Fortnite Map" />
-  <canvas id="gridCanvas"></canvas>
-  <div id="marker" title="Drop Marker"></div>
-</div>
-
-<script>
-  const mapWidth = 2048;
-  const mapHeight = 2048;
-  const gridSpacing = 256;
-
-  const mapContainer = document.getElementById('mapContainer');
-  const gridCanvas = document.getElementById('gridCanvas');
-  const marker = document.getElementById('marker');
-
-  // Set canvas size to match container display size in pixels
-  function resizeCanvas() {
-    const rect = mapContainer.getBoundingClientRect();
-    gridCanvas.width = rect.width;
-    gridCanvas.height = rect.height;
-  }
-
-  // Draw grid lines and labels on canvas
-  function drawGrid() {
-    const ctx = gridCanvas.getContext('2d');
-    ctx.clearRect(0, 0, gridCanvas.width, gridCanvas.height);
-
-    const rect = mapContainer.getBoundingClientRect();
-    const scaleX = rect.width / mapWidth;
-    const scaleY = rect.height / mapHeight;
-
-    ctx.strokeStyle = 'lime';
-    ctx.lineWidth = 1;
-    ctx.font = '12px monospace';
-    ctx.fillStyle = 'lime';
-
-    // Vertical lines and labels
-    for(let x = 0; x <= mapWidth; x += gridSpacing) {
-      const px = x * scaleX;
-      ctx.beginPath();
-      ctx.moveTo(px, 0);
-      ctx.lineTo(px, rect.height);
-      ctx.stroke();
-      ctx.fillText(x, px + 2, 12);
-    }
-    // Horizontal lines and labels
-    for(let y = 0; y <= mapHeight; y += gridSpacing) {
-      const py = y * scaleY;
-      ctx.beginPath();
-      ctx.moveTo(0, py);
-      ctx.lineTo(rect.width, py);
-      ctx.stroke();
-      ctx.fillText(y, 2, py - 2);
-    }
-  }
-
-  // Position marker at given (x, y) map coords
-  function setMarkerPosition(x, y) {
-    const rect = mapContainer.getBoundingClientRect();
-    const scaleX = rect.width / mapWidth;
-    const scaleY = rect.height / mapHeight;
-
-    // Coordinates (x, y) are from top-left, scale to container size
-    const posX = x * scaleX;
-    const posY = y * scaleY;
-
-    marker.style.left = `${posX}px`;
-    marker.style.top = `${posY}px`;
-  }
-
-  // Fetch location data (name and coords) from location.json on GitHub
-  async function updateMarkerFromLocation() {
-    try {
-      const res = await fetch('https://thedustys.github.io/Fortnite-playing/location.json', {cache: 'no-store'});
-      const data = await res.json();
-
-      // Expecting { name: "POI Name", x: 123, y: 456 }
-      if(data && data.x !== undefined && data.y !== undefined) {
-        setMarkerPosition(data.x, data.y);
-      } else {
-        // Hide marker if no valid location
-        marker.style.left = '-100px';
-        marker.style.top = '-100px';
-      }
-    } catch (e) {
-      console.error('Error fetching location.json:', e);
-    }
-  }
-
-  function refresh() {
-    resizeCanvas();
-    drawGrid();
-    updateMarkerFromLocation();
-  }
-
-  window.addEventListener('resize', refresh);
-
-  // Refresh every 5 seconds
-  setInterval(refresh, 5000);
-
-  // Initial load
-  refresh();
-</script>
-
-</body>
-</html>
-  <div id="container">
-    <img id="map" src="https://media.fortniteapi.io/images/map.png" alt="Fortnite Map" />
-    <div id="marker"></div>
-  </div>
+  <img id="map" src="https://media.fortniteapi.io/images/map.png" alt="Fortnite Map" />
+  <div id="marker"></div>
 
   <script>
-    const mapImageSize = 2048;
-    const marker = document.getElementById("marker");
-    const container = document.getElementById("container");
+    const map = document.getElementById('map');
+    const marker = document.getElementById('marker');
 
     async function updateMarker() {
       try {
-        const res = await fetch("https://thedustys.github.io/Fortnite-playing/poi.json?" + Date.now());
-        const { x, y } = await res.json();
+        const response = await fetch('location.json', { cache: "no-store" });
+        const data = await response.json();
+        const mapSize = 2048;
 
-        const containerRect = container.getBoundingClientRect();
-        const scaleX = containerRect.width / mapImageSize;
-        const scaleY = containerRect.height / mapImageSize;
+        const x = data.x;
+        const y = data.y;
 
-        const posX = x * scaleX;
-        const posY = y * scaleY;
+        // Transform to top-right origin
+        const flippedX = mapSize - x;
+        const posX = flippedX / mapSize * window.innerWidth;
+        const posY = y / mapSize * window.innerHeight;
 
         marker.style.left = `${posX}px`;
         marker.style.top = `${posY}px`;
       } catch (err) {
-        console.error("Failed to fetch poi.json or calculate marker:", err);
+        console.error("Failed to update marker:", err);
       }
     }
 
+    setInterval(updateMarker, 2000);
     updateMarker();
-    setInterval(updateMarker, 5000);
   </script>
 </body>
 </html>
