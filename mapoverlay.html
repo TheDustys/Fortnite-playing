@@ -1,94 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fortnite Map Overlay</title>
+  <meta charset="UTF-8">
+  <title>Drop Location Map</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      overflow: hidden;
-      height: 100%;
-      width: 100%;
       background: black;
+      overflow: hidden;
     }
     #map-container {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      position: relative;
+      width: 100vw;
+      height: 100vh;
     }
     #map {
       width: 100%;
       height: 100%;
       object-fit: contain;
-      position: absolute;
-      top: 0;
-      left: 0;
     }
-    .marker {
+    #marker {
       position: absolute;
-      width: 32px;
-      height: 32px;
+      width: 24px;
+      height: 24px;
+      background-color: red;
+      border-radius: 50%;
+      border: 2px solid white;
       transform: translate(-50%, -50%);
       pointer-events: none;
-      z-index: 999;
     }
   </style>
 </head>
 <body>
   <div id="map-container">
-    <img id="map" src="https://fortnite.gg/img/map/map.png" alt="Fortnite Map">
-    <img id="marker" class="marker" src="https://upload.wikimedia.org/wikipedia/commons/e/ec/RedDot.svg" alt="Marker" style="display:none">
+    <img id="map" src="" alt="Fortnite Map">
+    <div id="marker" style="display:none;"></div>
   </div>
 
   <script>
-    const locationPositions = {
-      "Brutal Bastion": { x: 68.1, y: 16.3 },
-      "Slappy Shores": { x: 80.5, y: 51.9 },
-      "Mega City": { x: 70.4, y: 72.1 },
-      "Shattered Slabs": { x: 33.2, y: 63.8 },
-      "Frenzy Fields": { x: 57.3, y: 62.5 },
-      "Breakwater Bay": { x: 23.1, y: 32.5 },
-      "Lonely Labs": { x: 87.5, y: 20.6 }
-      // Add more known POIs here
+    const markerEl = document.getElementById("marker");
+    const mapImg = document.getElementById("map");
+
+    const poiCoordinates = {
+      "Brutal Bastion": [3970, 3040],
+      "Frenzy Fields": [3000, 4000],
+      "Mega City": [4600, 4200],
+      "Shattered Slabs": [2100, 4200],
+      "Slappy Shores": [4300, 2500],
+      "Steamy Springs": [3600, 4400],
+      "The Citadel": [1700, 2200],
+      "Lonely Labs": [4900, 1700],
+      "Anvil Square": [2900, 3000],
+      "Breakwater Bay": [1000, 1900],
+      "Faulty Splits": [3900, 3600],
+      "Kenjutsu Crossing": [4900, 4900]
     };
 
-    const marker = document.getElementById("marker");
-    const map = document.getElementById("map");
-    const container = document.getElementById("map-container");
-
-    function updateMarker(location) {
-      const pos = locationPositions[location];
-      if (!pos) {
-        console.warn("Unknown location:", location);
-        marker.style.display = "none";
-        return;
-      }
-      const containerWidth = container.offsetWidth;
-      const containerHeight = container.offsetHeight;
-      const left = (pos.x / 100) * containerWidth;
-      const top = (pos.y / 100) * containerHeight;
-
-      marker.style.left = `${left}px`;
-      marker.style.top = `${top}px`;
-      marker.style.display = "block";
+    async function loadMapImage() {
+      const res = await fetch("https://fortnite-api.com/v1/map");
+      const data = await res.json();
+      const imageUrl = data.data.images.pois;
+      mapImg.src = imageUrl;
     }
 
-    async function fetchLocation() {
+    async function updateMarker() {
       try {
-        const res = await fetch("location.json?" + new Date().getTime());
-        const json = await res.json();
-        if (json.location) updateMarker(json.location);
-      } catch (err) {
-        console.error("Failed to fetch location.json:", err);
+        const res = await fetch("location.json", { cache: "no-store" });
+        const data = await res.json();
+        const location = data.location;
+
+        if (location && poiCoordinates[location]) {
+          const [x, y] = poiCoordinates[location];
+
+          // Fortnite map is 5120 x 5120 coordinates, so scale to image size
+          const mapWidth = mapImg.clientWidth;
+          const mapHeight = mapImg.clientHeight;
+
+          const left = (x / 5120) * mapWidth;
+          const top = (y / 5120) * mapHeight;
+
+          markerEl.style.left = `${left}px`;
+          markerEl.style.top = `${top}px`;
+          markerEl.style.display = "block";
+        } else {
+          markerEl.style.display = "none";
+        }
+      } catch (e) {
+        console.error("Failed to update marker:", e);
       }
     }
 
-    setInterval(fetchLocation, 2000);
-    fetchLocation();
+    loadMapImage();
+    setInterval(updateMarker, 2000);
   </script>
 </body>
 </html>
